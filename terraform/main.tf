@@ -47,7 +47,6 @@ resource "google_compute_firewall" "ssh-rule" {
   source_ranges = ["0.0.0.0/0"]
 }
 
-
 resource "google_compute_address" "master_ip_address" {
   name = "master-external-ip"
 }
@@ -78,16 +77,14 @@ resource "google_compute_instance" "master_vm_instance" {
       network_tier = "PREMIUM"
     }
   }
-
   service_account {
     email   = var.service_account.email
     scopes  = var.service_account.scopes
   }
-
   provisioner "file" {
     connection {
-      private_key = "${file("~/.ssh/id_rsa")}"
-      user        = "${var.gce_ssh_user}"
+      private_key = file(var.gce_ssh_private_key_file)
+      user        = var.gce_ssh_user
       type        = "ssh"
       host = google_compute_address.master_ip_address.address
     }
@@ -96,9 +93,20 @@ resource "google_compute_instance" "master_vm_instance" {
     source      = var.master_startup_script
   }
 
-  provisioner "local-exec" {
-    command = "chmod u+x k8sMaster.sh && bash k8sMaster.sh | tee $HOME/master.out"
+  provisioner "remote-exec" {
+    connection {
+      private_key = file(var.gce_ssh_private_key_file)
+      user        = var.gce_ssh_user
+      type        = "ssh"
+      host = google_compute_address.master_ip_address.address
+    }
+    inline = [
+      "cd /home/${var.gce_ssh_user}",
+      "chmod u+x k8sMaster.sh",
+      "bash k8sMaster.sh | tee $HOME/master.out",
+    ]
   }
+
 
 }
 
@@ -140,8 +148,8 @@ resource "google_compute_instance" "worker_vm_instance" {
 
   provisioner "file" {
     connection {
-      private_key = "${file("~/.ssh/id_rsa")}"
-      user        = "${var.gce_ssh_user}"
+      private_key = file(var.gce_ssh_private_key_file)
+      user        = var.gce_ssh_user
       type        = "ssh"
       host = google_compute_address.worker_ip_address.address
     }
@@ -150,9 +158,20 @@ resource "google_compute_instance" "worker_vm_instance" {
     source      = var.worker_startup_script
   }
 
-  provisioner "local-exec" {
-    command = "chmod u+x k8sWorker.sh && bash k8sWorker.sh | tee $HOME/worker.out"
+  provisioner "remote-exec" {
+    connection {
+      private_key = file(var.gce_ssh_private_key_file)
+      user        = var.gce_ssh_user
+      type        = "ssh"
+      host = google_compute_address.worker_ip_address.address
+    }
+    inline = [
+      "cd /home/${var.gce_ssh_user}",
+      "chmod u+x k8sWorker.sh",
+      "bash k8sWorker.sh | tee $HOME/worker.out",
+    ]
   }
+
 }
 
 

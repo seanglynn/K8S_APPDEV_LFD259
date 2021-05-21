@@ -15,15 +15,15 @@ variable "disk_size" {
 
 variable "gce_credentials_file" {
   type = string
-  default = "../../K8s_Dev/k8s-knative-classifier-course/analysis-func/sglynnbot-key.json"
 }
 variable "gce_ssh_pub_key_file" {
   type = string
-  default = "~/.ssh/id_rsa.pub"
+}
+variable "gce_ssh_private_key_file" {
+  type = string
 }
 variable "gce_ssh_user" {
   type = string
-  default = "sglynnbot"
 }
 
 variable "machine_type" {
@@ -48,10 +48,6 @@ variable "service_account" {
     email  = string
     scopes = set(string)
   })
-  default = {
-    email  = "sglynnbot@sodium-hangar-309319.iam.gserviceaccount.com"
-    scopes = ["cloud-platform"]
-  }
 }
 
 variable "source_image" {
