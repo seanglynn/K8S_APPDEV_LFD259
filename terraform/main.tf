@@ -12,20 +12,20 @@ module "network" {
   source        = "terraform-google-modules/network/google"
   version       = "2.0.2"
 
-  network_name  = "lfclass-terraform-vpc-network"
+  network_name  = "k8sappdev-terraform-vpc-network"
   project_id    = var.project
 
   subnets       = [
     {
-      subnet_name   = "lfclass-terraform-vpc-network-subnet"
-      subnet_ip     = var.cidrs[0]
+      subnet_name   = "k8sappdev-terraform-vpc-network-subnet"
+      subnet_ip     = var.cidrs[1]
       subnet_region = var.region
     },
   ]
 }
 
-resource "google_compute_firewall" "lfclass" {
-  name            = "lfclass-terraform-firewall"
+resource "google_compute_firewall" "k8sappdev" {
+  name            = "k8sappdev-terraform-firewall"
   network         = module.network.network_name
   source_ranges   = [ var.cidrs[1] ]
 
@@ -36,6 +36,15 @@ resource "google_compute_firewall" "lfclass" {
   allow {
     protocol = "udp"
   }
+}
+resource "google_compute_firewall" "ssh-rule" {
+  name = "allow-ssh"
+  network         = module.network.network_name
+  allow {
+    protocol = "tcp"
+    ports = ["22"]
+  }
+  source_ranges = ["0.0.0.0/0"]
 }
 
 resource "google_compute_address" "master_ip_address" {
@@ -68,11 +77,37 @@ resource "google_compute_instance" "master_vm_instance" {
       network_tier = "PREMIUM"
     }
   }
-
   service_account {
     email   = var.service_account.email
     scopes  = var.service_account.scopes
   }
+  provisioner "file" {
+    connection {
+      private_key = file(var.gce_ssh_private_key_file)
+      user        = var.gce_ssh_user
+      type        = "ssh"
+      host = google_compute_address.master_ip_address.address
+    }
+
+    destination = "k8sMaster.sh"
+    source      = var.master_startup_script
+  }
+
+  provisioner "remote-exec" {
+    connection {
+      private_key = file(var.gce_ssh_private_key_file)
+      user        = var.gce_ssh_user
+      type        = "ssh"
+      host = google_compute_address.master_ip_address.address
+    }
+    inline = [
+      "cd /home/${var.gce_ssh_user}",
+      "chmod u+x k8sMaster.sh",
+      "bash k8sMaster.sh | tee $HOME/master.out",
+    ]
+  }
+
+
 }
 
 resource "google_compute_address" "worker_ip_address" {
@@ -110,4 +145,35 @@ resource "google_compute_instance" "worker_vm_instance" {
     email   = var.service_account.email
     scopes  = var.service_account.scopes
   }
+
+  provisioner "file" {
+    connection {
+      private_key = file(var.gce_ssh_private_key_file)
+      user        = var.gce_ssh_user
+      type        = "ssh"
+      host = google_compute_address.worker_ip_address.address
+    }
+
+    destination = "k8sWorker.sh"
+    source      = var.worker_startup_script
+  }
+
+  provisioner "remote-exec" {
+    connection {
+      private_key = file(var.gce_ssh_private_key_file)
+      user        = var.gce_ssh_user
+      type        = "ssh"
+      host = google_compute_address.worker_ip_address.address
+    }
+    inline = [
+      "cd /home/${var.gce_ssh_user}",
+      "chmod u+x k8sWorker.sh",
+      "bash k8sWorker.sh | tee $HOME/worker.out",
+    ]
+  }
+
 }
+
+
+
+
