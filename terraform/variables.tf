@@ -65,8 +65,19 @@ variable "worker_startup_script" {
   type = string
   default = "../SOLUTIONS/s_02/k8sSecond.sh"
 }
+//variable "static_ip" {
+//  type = string
+//}
+
 
 variable "zone" {
   type = string
   default = "us-central1-c"
+}
+variable "lfd_username" {
+  type = string
+  default = "LFtraining"
+}
+variable "lfd_pw" {
+  type = string
 }

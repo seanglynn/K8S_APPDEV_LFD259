@@ -27,24 +27,22 @@ module "network" {
 resource "google_compute_firewall" "k8sappdev" {
   name            = "k8sappdev-terraform-firewall"
   network         = module.network.network_name
-  source_ranges   = [ var.cidrs[1] ]
+  source_ranges   = ["0.0.0.0/0", var.cidrs[0], var.cidrs[1]]
 
   allow {
     protocol = "tcp"
+//    ports = ["22", "80","53", "443", "6443", "8443", "8000", "10000-20000"]
   }
 
   allow {
     protocol = "udp"
   }
-}
-resource "google_compute_firewall" "ssh-rule" {
-  name = "allow-ssh"
-  network         = module.network.network_name
   allow {
-    protocol = "tcp"
-    ports = ["22"]
+    protocol = "icmp"
   }
-  source_ranges = ["0.0.0.0/0"]
+  allow {
+    protocol = "sctp"
+  }
 }
 
 resource "google_compute_address" "master_ip_address" {
@@ -70,9 +68,13 @@ resource "google_compute_instance" "master_vm_instance" {
 
   metadata_startup_script = var.master_startup_script
 
+
   network_interface {
     subnetwork = module.network.subnets_names[0]
     access_config {
+      // Use var.static_ip if defined
+//      nat_ip = var.static_ip != "" ? var.static_ip : google_compute_address.master_ip_address.address
+//      nat_ip       = var.static_ip
       nat_ip       = google_compute_address.master_ip_address.address
       network_tier = "PREMIUM"
     }
@@ -81,6 +83,7 @@ resource "google_compute_instance" "master_vm_instance" {
     email   = var.service_account.email
     scopes  = var.service_account.scopes
   }
+
   provisioner "file" {
     connection {
       private_key = file(var.gce_ssh_private_key_file)
@@ -91,6 +94,17 @@ resource "google_compute_instance" "master_vm_instance" {
 
     destination = "k8sMaster.sh"
     source      = var.master_startup_script
+  }
+  provisioner "file" {
+    connection {
+      private_key = file(var.gce_ssh_private_key_file)
+      user        = var.gce_ssh_user
+      type        = "ssh"
+      host = google_compute_address.master_ip_address.address
+    }
+
+    destination = "setup"
+    source      = "../SOLUTIONS/setup"
   }
 
   provisioner "remote-exec" {
@@ -104,10 +118,12 @@ resource "google_compute_instance" "master_vm_instance" {
       "cd /home/${var.gce_ssh_user}",
       "chmod u+x k8sMaster.sh",
       "bash k8sMaster.sh | tee $HOME/master.out",
+      "sudo cp -f /etc/kubernetes/admin.conf /home/${var.gce_ssh_user}/.kube/config",
+      "wget https://training.linuxfoundation.org/cm/LFD259/LFD259_V2021-05-21_SOLUTIONS.tar.xz --user=${var.lfd_username} --password=${var.lfd_pw} -O /home/${var.gce_ssh_user}/LFD259_SOLUTIONS.tar.xz && tar -xvf /home/${var.gce_ssh_user}/LFD259_SOLUTIONS.tar.xz ",
+      "kubectl create serviceaccount ${var.gce_ssh_user}",
+      "echo 'alias k=kubectl'  >> ~/.bashrc",
     ]
   }
-
-
 }
 
 resource "google_compute_address" "worker_ip_address" {

@@ -1,0 +1,32 @@
+{
+  "kind": "Namespace",
+  "apiVersion": "v1",
+  "metadata": {
+    "name": "kubernetes-dashboard",
+    "spec": {},
+    "status": {
+      "phase": "Terminating",
+      "conditions": [
+        {
+          "type": "NamespaceDeletionDiscoveryFailure",
+          "status": "True",
+          "reason": "DiscoveryFailed",
+          "message": "Discovery failed for some groups, 1 failing: unable to retrieve the complete list of server APIs: metrics.k8s.io/v1beta1: the server is currently unable to handle the request"
+        },
+        {
+          "type": "NamespaceDeletionGroupVersionParsingFailure",
+          "status": "False",
+          "reason": "ParsedGroupVersions",
+          "message": "All legacy kube types successfully parsed"
+        },
+        {
+          "type": "NamespaceDeletionContentFailure",
+          "status": "False",
+          "lastTransitionTime": "2021-07-25T10:53:54Z",
+          "reason": "ContentDeleted",
+          "message": "All content successfully deleted"
+        }
+      ]
+    }
+  }
+}

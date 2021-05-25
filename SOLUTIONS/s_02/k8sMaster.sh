@@ -87,4 +87,5 @@ echo
 echo "Script finished. Move to the next step"
 
 
-
+echo "Allowing master node to spin-up pods"
+kubectl taint nodes --all node-role.kubernetes.io/master- || true
