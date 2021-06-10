@@ -8,7 +8,9 @@ spec:
   ports:
   - port: 80
     protocol: TCP
-  type: NodePort
+    nodePort: 32000
+  type: LoadBalancer
   selector:
     example: second
+
 
