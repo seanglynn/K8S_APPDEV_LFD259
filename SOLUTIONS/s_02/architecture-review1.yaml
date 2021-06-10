@@ -2,8 +2,25 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: break1
+  labels:
+    type: webserver
 spec:
   containers:
   - name: mountain-region
-    image: nginx:1.11-apline
+    image: nginx:1.11-alpine
+    ports:
+      - containerPort: 80
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: break1
+spec:
+  selector:
+    type: webserver
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 80
 

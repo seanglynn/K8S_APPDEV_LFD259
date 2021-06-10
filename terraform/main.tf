@@ -117,7 +117,7 @@ resource "google_compute_instance" "master_vm_instance" {
     inline = [
       "cd /home/${var.gce_ssh_user}",
       "chmod u+x k8sMaster.sh",
-      "bash k8sMaster.sh | tee $HOME/master.out",
+      "bash k8sMaster.sh ${google_compute_address.master_ip_address.address} | tee $HOME/master.out",
       "sudo cp -f /etc/kubernetes/admin.conf /home/${var.gce_ssh_user}/.kube/config",
       "wget https://training.linuxfoundation.org/cm/LFD259/LFD259_V2021-05-21_SOLUTIONS.tar.xz --user=${var.lfd_username} --password=${var.lfd_pw} -O /home/${var.gce_ssh_user}/LFD259_SOLUTIONS.tar.xz && tar -xvf /home/${var.gce_ssh_user}/LFD259_SOLUTIONS.tar.xz ",
       "kubectl create serviceaccount ${var.gce_ssh_user}",

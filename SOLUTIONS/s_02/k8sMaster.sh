@@ -53,7 +53,15 @@ echo "Installed - now to get Calico Project network plugin"
 
 sleep 3
 
-sudo kubeadm init --kubernetes-version 1.19.0 --pod-network-cidr 192.168.0.0/16
+MASTER_IP=$1
+echo "MASTER_IP: $MASTER_IP"
+sudo docker run --network host --rm plndr/kube-vip manifest pod \
+--interface tunl0 \
+--vip $MASTER_IP \
+--arp \
+--leaderElection | sudo tee /etc/kubernetes/manifests/vip.yaml
+
+sudo kubeadm init --kubernetes-version 1.19.0 --pod-network-cidr 192.168.0.0/16 --control-plane-endpoint $MASTER_IP --apiserver-cert-extra-sans=$MASTER_IP --upload-certs
 
 sleep 5
 
